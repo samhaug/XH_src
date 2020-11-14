@@ -51,20 +51,24 @@ main(int argc, char *argv[]){
     // find maximum amplitude up to 10 seconds before signal (190 seconds at 5Hz)
     float noisemax=0;
     for (int i=0;i<(190*5);i++){
-        if (fabs(seism[i]) >= noisemax){
-           noisemax = seism[i];
+        if (fabs(seism[i]) >= fabs(noisemax)){
+           noisemax = fabs(seism[i]);
         }
     }
     // find maximum amplitude of ten second window around signal (190-210 seconds)
     float sigmax=0;
     for (int i=(190*5);i<(210*5);i++){
-        if (fabs(seism[i]) >= sigmax){
-           sigmax = seism[i];
+        if (fabs(seism[i]) >= fabs(sigmax)){
+           sigmax = fabs(seism[i]);
         }
     }
 
     // Only if the max signal amplitude is greater than SNR*noise, write the trace
     if (sigmax >= noisemax*SNR){
+       // Normalize trace on signal maxima
+       for (int i=0;i<h.ndata;i++){   
+           seism[i] *= 1./sigmax;
+       }
        if (! xh_writehead(ofl,h)) exit(-1);
        if (! xh_writedata(ofl,h,seism)) exit(-1);
     }

@@ -1,7 +1,8 @@
 #include "beamform.h"
 #include <stdio.h>
+#include <math.h>
 #include <stdlib.h>
-
+#define deg2rad M_PI/180.
 int main(int argc,char *argv[]){
     FILE *ifl;
     beamform beam;
@@ -25,7 +26,8 @@ int main(int argc,char *argv[]){
         for (j=0;j<beam.ndata;j++){
             time = ((float)j*beam.delta);
             inc = (int)(beam.i_min + i*beam.i_inc);
-            fprintf(stdout,"%8.4f %4d %8.4f %8.4f %8.4f\n",time+400,inc,
+            float p = (1/5.8)*sin(deg2rad*inc)*111.195;
+            fprintf(stdout,"%8.4f %4d %8.5f %8.5f %8.5f %8.5f\n",time,inc,p,
                     beam.dat1[idx][i][j],
                     beam.dat2[idx][i][j],
                     beam.dat3[idx][i][j]);

@@ -11,9 +11,7 @@
 
 /*
  */
-#define MAXTRACE 3000
-#define MAXSAMP 65536
-#define MAXP 500
+#define MAXTRACE 100
 
 int usage();
 
@@ -31,7 +29,7 @@ int main(int argc,char *argv[]){
   float lat_mean=0,lon_mean=0;
   float seism[XH_NPTS];
   float seism_roll[XH_NPTS];
-  float stack[XH_NPTS];
+  float stack4[XH_NPTS];
   float stack2[XH_NPTS];
   float linstack[XH_NPTS];
   float fenv[XH_NPTS];
@@ -148,7 +146,7 @@ int main(int argc,char *argv[]){
       still_reading_data = 1;
       rewind(inf);
       for (jj=0;jj<num_samp;jj++){
-        stack[jj] = 0.;
+        stack4[jj] = 0.;
         stack2[jj] = 0.;
         linstack[jj] = 0.;
       }
@@ -175,7 +173,7 @@ int main(int argc,char *argv[]){
         }
         for (jj=0;jj<num_samp;jj++){
            // 4th root stack
-           stack[jj] += pow(fabs(seism_roll[jj]),0.25)*
+           stack4[jj] += pow(fabs(seism_roll[jj]),0.25)*
                         (seism_roll[jj]/fabs(seism_roll[jj]))/(float)M;
            //
            stack2[jj] += pow(fabs(seism_roll[jj]),0.5)*
@@ -187,21 +185,22 @@ int main(int argc,char *argv[]){
       } //while
       // 4th root stack cont'd
       for (jj=0;jj<num_samp;jj++){
-         stack[jj] = pow(fabs(stack[jj]),4)*(stack[jj]/fabs(stack[jj]));
-         stack2[jj] = pow(fabs(stack[jj]),2)*(stack[jj]/fabs(stack[jj]));
+         stack4[jj] = pow(fabs(stack4[jj]),4)*(stack4[jj]/fabs(stack4[jj]));
+         stack2[jj] = pow(fabs(stack4[jj]),2)*(stack4[jj]/fabs(stack4[jj]));
       }
 
-      if (! envelope(num_samp,stack,fenv)){
+      if (! envelope(num_samp,stack4,fenv)){
          fprintf(stdout,"error with envelope\n");
          exit(-1);
       }
 
       for (jj=0;jj<num_samp;jj++){
+         //Linear stack in dat1
          beam.dat1[b_idx][i_idx][jj] = linstack[jj];
-         //beam.dat2[b_idx][i_idx][jj] = stack2[jj];
+         //4th root envelope in dat2
          beam.dat2[b_idx][i_idx][jj] = fenv[jj];
-         //#beam.dat4[b_idx][i_idx][jj] = 0.;
-         ///beam.dat5[b_idx][i_idx][jj] = 0.;
+         //4th stack in dat3
+         beam.dat3[b_idx][i_idx][jj] = stack4[jj];
       }
     i_idx++;
     } //icount loop

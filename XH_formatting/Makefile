@@ -124,7 +124,7 @@ xh_beamslice:
 	$(CC) -o $(BINDIR)/xh_beamslice xh_beamslice.c
 
 xh_beamvesp:
-	$(CC) -o $(BINDIR)/xh_beamvesp xh_beamvesp.c
+	$(CC) -o $(BINDIR)/xh_beamvesp xh_beamvesp.c -lm
 
 xh_bpfilter:
 	$(CC) -o $(BINDIR)/xh_bpfilter -g xh_bpfilter.c $(LIBXH) $(LIBSGNL) $(LIBM)
