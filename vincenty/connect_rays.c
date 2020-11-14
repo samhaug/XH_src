@@ -16,12 +16,12 @@ int main(int argc, char *argv[]){
   double evla,evlo,stla,stlo,baz,inc,outrad,outdist;
   double lat1,lon1,lat2,lon2;
   double phi1,phi2,lambda2,alpha21,alpha12;
-  double outgcarc,ingcarc,gcarc;
+  double outgcarc,ingcarc,gcarc,amp;
   double min=1e9;
   int ierr,i;
   FILE *ifl, *ofl;
 
-  if (argc != 8){
+  if (argc != 9){
     ierr = usage();
     exit(ierr);
   }
@@ -42,6 +42,7 @@ int main(int argc, char *argv[]){
   baz = atof(argv[5]);
   inc = atof(argv[6]);
   time = atof(argv[7]);
+  amp = atof(argv[8]);
 
 i=0;
 while (!feof(ifl)){
@@ -65,7 +66,7 @@ while (!feof(ifl)){
         // if coordinates are closer than 5 km then compute time 
         outdist = (outgcarc/111195.)*(3.14159/180.)*outrad*1000;
         if ((outdist < 5000.) && ( fabs(intime+outtime-time) < 1)){
-           printf("%8.2f %8.2f %8.2f %8.2f %8.2f %8.2f\n",baz,inc,time,lat1,lon1,6371-outrad);
+           printf("%8.2f %8.2f %8.2f %8.4f %8.2f %8.2f %8.2f\n",baz,inc,time,amp,lat1,lon1,6371-outrad);
            return(1);
         }
      }

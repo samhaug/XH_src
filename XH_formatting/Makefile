@@ -103,7 +103,10 @@ xh_beamenergy:
 	$(CC) -Wall -o $(BINDIR)/xh_beamenergy xh_beamenergy.c $(LIBXH) $(LIBD) $(LIBM) $(LIBSGNL)
 
 xh_3compbeamform:
-	$(CC) -Wall -o $(BINDIR)/xh_3compbeamform xh_3compbeamform.c $(LIBXH) $(LIBD) $(LIBM) $(LIBSGNL)
+	$(CC) -Wall -std=gnu99  -o $(BINDIR)/xh_3compbeamform xh_3compbeamform.c $(LIBXH) $(LIBD) $(LIBM) $(LIBSGNL)
+
+xh_3compbeamform_slow:
+	$(CC) -Wall -std=gnu99  -o $(BINDIR)/xh_3compbeamform_slow xh_3compbeamform_slow.c $(LIBXH) $(LIBD) $(LIBM) $(LIBSGNL)
 
 xh_beamform:
 	$(CC) -Wall -o $(BINDIR)/xh_beamform xh_beamform.c $(LIBXH) $(LIBD) $(LIBM) $(LIBSGNL)
@@ -128,6 +131,9 @@ xh_bpfilter:
 
 xh_checkorder:
 	$(CC) -o $(BINDIR)/xh_checkorder xh_checkorder.c $(LIBXH) $(LIBM) 
+
+xh_cleandata:
+	$(CC) -std=c99 -o $(BINDIR)/xh_cleandata xh_cleandata.c $(LIBXH) $(LIBM) 
 
 xh_compare:
 	$(CC) -o $(BINDIR)/xh_compare xh_compare.c $(LIBXH) $(LIBM) $(LIBUTL) $(XH_INC)

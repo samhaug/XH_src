@@ -16,9 +16,15 @@
  * q = z * sin(inc) + n * cos(inc) * cos(ba) + e * cos(inc) * sin(ba)  # NOQA
  * t = n * sin(ba) - e * cos(ba)  # NOQA                        
  */
+//  1. make BH1 and BH2 compatable
+//  2. account for sensor alignment with back-azimuth
+//  3. using xh_readhead in large loop makes it slow
+//
 #define MAXTRACE 3000
 #define MAXSAMP 65536
 #define MAXP 500
+#define TRACE 50
+#define NPT 5000
 
 int usage();
 float max(float num1, float num2);
@@ -32,8 +38,7 @@ int main(int argc,char *argv[]){
   FILE *infz,*infe,*infn,*outf;
   int i_shift,b_idx,i_idx,ierr;
   int still_reading_data = 1;
-  int ii=0,jj=0,M=0;
-  int baz_min,baz_max,baz_inc,i_min,i_max,i_inc;
+  int jj=0,M=0;
   int bcount,icount, num_samp=0;
   int distaz();
   float v_o=5.80;
@@ -49,6 +54,14 @@ int main(int argc,char *argv[]){
   float fenv[XH_NPTS];
   float x_vec[MAXTRACE],y_vec[MAXTRACE];
   float rad_i,rad_b,gcarc,az,baz,t_shift;
+
+  // 2D arrays for data
+  float dataz[TRACE][NPT],datan[TRACE][NPT],datae[TRACE][NPT];
+  // arrays for station coords
+  float zlat[TRACE],zlon[TRACE];
+  float delta[TRACE];
+  //float nlat[TRACE],nlon[TRACE];
+  //float elat[TRACE],elon[TRACE];
 
   if(argc != 11) {
      ierr = usage();
@@ -67,12 +80,12 @@ int main(int argc,char *argv[]){
      exit(-1);
   }
 
-  baz_min=atoi(argv[4]); 
-  baz_max=atoi(argv[5]); 
-  baz_inc=atoi(argv[6]); 
-  i_min=atoi(argv[7]); 
-  i_max=atoi(argv[8]); 
-  i_inc=atoi(argv[9]); 
+  int baz_min=atoi(argv[4]); 
+  int baz_max=atoi(argv[5]); 
+  int baz_inc=atoi(argv[6]); 
+  int i_min=atoi(argv[7]); 
+  int i_max=atoi(argv[8]); 
+  int i_inc=atoi(argv[9]); 
   beam.baz_min = baz_min;
   beam.baz_max = baz_max;
   beam.baz_inc = baz_inc;
@@ -80,13 +93,15 @@ int main(int argc,char *argv[]){
   beam.i_max = i_max;
   beam.i_inc = i_inc;
 
-  //Find array centroid
+  //Find array centroid, read in Z data
+  int ii=0;
+  int numtrace=0;
   while (still_reading_data){
     if (! xh_readhead(infz,&hz)){
       still_reading_data = 0;
     } 
     else {	
-      if (! xh_readdata(infz,hz,seismz)) {
+      if (! xh_readdata(infz,hz,seismz)){
         still_reading_data = 0;
       }
       if (! xh_checkheader(hz)){
@@ -102,59 +117,106 @@ int main(int argc,char *argv[]){
        beam.e_lon = hz.elon;
        beam.e_dep = hz.edep;
     }
+
+    zlat[ii] = hz.slat;
+    zlon[ii] = hz.slon;
+    delta[ii] = hz.delta;
+
+    for (int j=0;j<hz.ndata;j++){
+        dataz[ii][j] = seismz[j];
+    }
+    printf("Z: %d\n",ii);
     lat_mean += hz.slat;
     lon_mean += hz.slon;
     ii++;
+    numtrace++;
     M++;
   } //while
-  still_reading_data = 1;
-  rewind(infz);
+  fclose(infz);
   lat_mean = (float)(lat_mean/ii);
   lon_mean = (float)(lon_mean/ii);
   beam.a_lat = lat_mean;
   beam.a_lon = lon_mean;
   // End find array centroid
-  
-  // Find position vectors of each station from array centroid
-  ii=0;
+  printf("Number of traces: %d %d\n",numtrace,M);
+
+  still_reading_data = 1;
+  ii = 0;
+  // Read in N data
   while (still_reading_data){
-    if (! xh_readhead(infz,&hz)){
+    if (! xh_readhead(infn,&hn)){
       still_reading_data = 0;
     } 
     else {	
-      if (! xh_readdata(infz,hz,seismz)) {
+      if (! xh_readdata(infn,hn,seismn)) {
         still_reading_data = 0;
       }
-      if (! xh_checkheader(hz)){
+      if (! xh_checkheader(hn)){
         still_reading_data = 0;
       }
     }
+    //nlat[ii] = hn.slat;
+    //nlon[ii] = hn.slon;
 
-    distaz(lat_mean, lon_mean, lat_mean, hz.slon, &gcarc, &az, &baz);
-    //if a_lat > tr.stats.sac['stla']:
-    if (lon_mean > hz.slon){
-        //printf("%s %s slon \n",h.netw,h.stnm);
-        x_vec[ii] = gcarc*-111.195/v_o;
+    for (int j=0;j<hn.ndata;j++){
+        datan[ii][j] = seismn[j];
     }
-    else {
-        x_vec[ii] = gcarc*111.195/v_o;
-    }
-
-    distaz(lat_mean, lon_mean, hz.slat, lon_mean, &gcarc, &az, &baz);
-    if (lat_mean > hz.slat){
-        //printf("%s %s slat \n",h.netw,h.stnm);
-        y_vec[ii] = gcarc*-111.195/v_o;
-    }
-    else {
-        y_vec[ii] = gcarc*111.195/v_o;
-    }
-    //printf("%s %s %8.3f %8.3f \n",h.netw,h.stnm,x_vec[ii],y_vec[ii]);
-    //printf("%s %s %8.3f %8.3f \n",h.netw,h.stnm,h.slat,h.slon);
+    printf("N: %d\n",ii);
     ii++;
   } //while
+  still_reading_data = 1;
+  fclose(infn);
+
+  ii = 0;
+  // Read in E data
+  while (still_reading_data){
+    if (! xh_readhead(infe,&he)){
+      still_reading_data = 0;
+    } 
+    else {	
+      if (! xh_readdata(infe,he,seisme)){
+        still_reading_data = 0;
+      }
+      if (! xh_checkheader(he)){
+        still_reading_data = 0;
+      }
+    }
+    for (int j=0;j<he.ndata;j++){
+        datae[ii][j] = seisme[j];
+    }
+    printf("E: %d\n",ii);
+    ii++;
+  } //while
+  fclose(infe);
+
+  // Find position vectors of each station from array centroid
+  for (int j=0;j<numtrace;j++){
+    //printf("%f %f %f %f\n",lat_mean,lon_mean,lat_mean,zlon[j]);
+    distaz(lat_mean, lon_mean, lat_mean, zlon[j], &gcarc, &az, &baz);
+    //if a_lat > tr.stats.sac['stla']:
+    if (lon_mean > zlon[j]){
+        //printf("%s %s slon \n",h.netw,h.stnm);
+        x_vec[j] = gcarc*-111.195/v_o;
+    }
+    else {
+        x_vec[j] = gcarc*111.195/v_o;
+    }
+
+    //printf("%f %f %f %f\n",lat_mean,lon_mean,zlat[j],lon_mean);
+    distaz(lat_mean, lon_mean, zlat[j], lon_mean, &gcarc, &az, &baz);
+    if (lat_mean > zlat[j]){
+        //printf("%s %s slat \n",h.netw,h.stnm);
+        y_vec[j] = gcarc*-111.195/v_o;
+    }
+    else {
+        y_vec[j] = gcarc*111.195/v_o;
+    }
+    // printf("%s %s %8.3f %8.3f \n",h.netw,h.stnm,x_vec[ii],y_vec[ii]);
+    // printf("%s %s %8.3f %8.3f \n",h.netw,h.stnm,h.slat,h.slon);
+  } // for
   // END find position vectors of each station from array centroid
   
-
+  
   // Begin beamforming
   b_idx = 0;
   i_idx = 0;
@@ -162,11 +224,8 @@ int main(int argc,char *argv[]){
     i_idx=0;
     fprintf(stdout,"%8.2f%%  complete\n",100*(float)bcount/(float)baz_max);
     for (icount=i_min;icount<i_max;icount+=i_inc){
-      ii=0;
       still_reading_data = 1;
-      rewind(infz);
-      rewind(infn);
-      rewind(infe);
+
       for (jj=0;jj<num_samp;jj++){
         stack[jj] = 0.;
         stack2[jj] = 0.;
@@ -175,39 +234,31 @@ int main(int argc,char *argv[]){
         seisms_bot[jj] = 0.;
       }
       
-      while (still_reading_data){
-        if (! xh_readhead(infz,&hz) || ! xh_readhead(infn,&hn) || ! xh_readhead(infe,&he)){
-          still_reading_data = 0;
-        } 
-        else {	
-          if (! xh_readdata(infz,hz,seismz) || ! xh_readdata(infn,hn,seismn)|| ! xh_readdata(infe,he,seisme)){
-            still_reading_data = 0;
-          }
-          if (! xh_checkheader(hz) || ! xh_checkheader(hn) || ! xh_checkheader(he)){
-            still_reading_data = 0;
-          }
-        }
+      for (int k=0;k<numtrace;k++){
         rad_i = (M_PI/180.)*icount;
         rad_b = (M_PI/180.)*bcount;
         // Rotate to l component
         l_max = 0;
         l_min = 0;
         for (jj=0;jj<num_samp;jj++){
-          seisml[jj] = seismz[jj]*cos(rad_i)-
-                       seismn[jj]*sin(rad_i)*cos(rad_b)-
-                       seisme[jj]*sin(rad_i)*sin(rad_b);
+          seisml[jj] = dataz[k][jj]*cos(rad_i)-
+                       datan[k][jj]*sin(rad_i)*cos(rad_b)-
+                       datae[k][jj]*sin(rad_i)*sin(rad_b);
+          // Find the min/max while you're at it
           if (seisml[jj]>=l_max) l_max = seisml[jj];
           if (seisml[jj]<=l_min) l_min = seisml[jj];
         }
+
         l_norm = max(fabs(l_min),l_max);
 
         for (jj=0;jj<num_samp;jj++){
           seisml[jj] = seisml[jj]/l_norm;
         }
 
-        t_shift = sin(rad_i)*sin(rad_b)*x_vec[ii]+sin(rad_i)*cos(rad_b)*y_vec[ii];
-        i_shift = (int)(t_shift/hz.delta);
-        if (! roll(seisml,seism_roll,hz.ndata,i_shift)){
+        t_shift = sin(rad_i)*sin(rad_b)*x_vec[k]+sin(rad_i)*cos(rad_b)*y_vec[k];
+        i_shift = (int)(t_shift/delta[k]);
+
+        if (! roll(seisml,seism_roll,num_samp,i_shift)){
            fprintf(stderr,"Error timeshifting data ... \n");
            exit(1);
         }
@@ -224,13 +275,15 @@ int main(int argc,char *argv[]){
            seisms_bot[jj] += pow(seism_roll[jj],2)*(float)M;
            seisms_top[jj] += seism_roll[jj];
         }
-        ii++;
-      } //while
+
+      } //for ktrace
+
       // 4th root stack cont'd
       for (jj=0;jj<num_samp;jj++){
          stack[jj] = pow(fabs(stack[jj]),4)*(stack[jj]/fabs(stack[jj]));
          stack2[jj] = pow(fabs(stack[jj]),2)*(stack[jj]/fabs(stack[jj]));
       }
+
       if (! envelope(num_samp,stack,fenv)){
          fprintf(stdout,"error with envelope\n");
          exit(-1);
@@ -250,9 +303,6 @@ int main(int argc,char *argv[]){
   b_idx++;
   } //bcount
 
-  fclose(infz);
-  fclose(infn);
-  fclose(infe);
   fflush(stdout);
   fprintf(stdout,"Writing beamform output...\n");
   outf = fopen(argv[10],"wb");
