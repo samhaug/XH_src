@@ -59,7 +59,7 @@ while (still_reading_data) {
     if (h.slat <=0) lat = 'S';
     if (h.slon <=0) lon = 'W';
     // STDOUT
-    fprintf(stdout,"%d %3.0fkm %s %s %3s ",
+    fprintf(stdout,"%5d %3.0fkm %-5s %-5s %3s ",
            icount,h.edep,h.netw,h.stnm,h.chan);
     fprintf(stdout,"%5.2f %6.2f ", h.elat,h.elon);
     fprintf(stdout,"%5.2f %6.2f ", h.slat,h.slon);

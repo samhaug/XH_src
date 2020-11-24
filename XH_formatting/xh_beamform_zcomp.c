@@ -4,13 +4,12 @@
 #include <math.h>
 #include <complex.h>
 #include <sys/param.h>
-#include "xhhead.h"   /* XH format  structures */
-#include "beamform.h" /* beamform  structure */
-
+#include "xhhead.h"        /* XH format structures */
+#include "beamform_zcomp.h"   /* beamform structure */
+ 
+#define deg2rad 3.14159/180.
 /* Beamforms an array of stations over backazimuth and incidence angle*/
 
-/*
- */
 #define MAXTRACE 100
 
 int usage();
@@ -44,6 +43,7 @@ int main(int argc,char *argv[]){
      fprintf(stdout,"Something wrong with XH_IN\n");
      exit(-1);
   }
+  outf = fopen(argv[8],"wb");
 
   baz_min=atoi(argv[2]); 
   baz_max=atoi(argv[3]); 
@@ -51,12 +51,6 @@ int main(int argc,char *argv[]){
   i_min=atoi(argv[5]); 
   i_max=atoi(argv[6]); 
   i_inc=atoi(argv[7]); 
-  beam.baz_min = baz_min;
-  beam.baz_max = baz_max;
-  beam.baz_inc = baz_inc;
-  beam.i_min = i_min;
-  beam.i_max = i_max;
-  beam.i_inc = i_inc;
 
   //Find array centroid
   while (still_reading_data){
@@ -73,13 +67,23 @@ int main(int argc,char *argv[]){
     }
     // Fill some beam structure data
     if (ii == 0){
-       num_samp=h.ndata;
-       beam.delta = h.delta;
-       beam.ndata = h.ndata;
-       beam.e_lat = h.elat;
-       beam.e_lon = h.elon;
-       beam.e_dep = h.edep;
+        beam.t_start = 0.;           // starting time
+        beam.delta_t = h.delta;	/* 1/sampling_rate  */
+        beam.ndata   = h.ndata;	/* number of trace samples  */
+        beam.baz_min = baz_min;
+        beam.baz_max = baz_max;
+        beam.baz_inc = baz_inc;
+        beam.i_min = i_min;
+        beam.i_max = i_max;
+        beam.i_inc = i_inc;
+        beam.p_min = (float)(1/v_o)*sin(deg2rad*i_min)*111.195;
+        beam.p_max = (float)(1/v_o)*sin(deg2rad*i_max)*111.195;
+        for (int i=0;i<4;i++) beam.filt[i] = h.intg[i]; // filter cutoffs
+        beam.evdp  = h.edep;    // eq depth
+        beam.elat = h.elat;     // event lat
+        beam.elon = h.elon;     // event lon
     }
+
     lat_mean += h.slat;
     lon_mean += h.slon;
     ii++;
@@ -87,13 +91,16 @@ int main(int argc,char *argv[]){
   } //while
   still_reading_data = 1;
   rewind(inf);
+
+  // End find array centroid
   lat_mean = (float)(lat_mean/ii);
   lon_mean = (float)(lon_mean/ii);
-  beam.a_lat = lat_mean;
-  beam.a_lon = lon_mean;
-  //printf("array: %5.3f %5.3f\n",lat_mean,lon_mean);
-  //printf("source: %5.3f %5.3f\n",h.elat,h.elon);
-  // End find array centroid
+  beam.slat = lat_mean;
+  beam.slon = lon_mean;
+  distaz(lat_mean, lon_mean, h.elat, h.elon, h.slon, &gcarc, &az, &baz);
+  beam.gcarc = gcarc;         // distance from source to array center (deg)
+  beam.sr_baz = baz;         // back-azimuth from source to array along great circle
+  beam.sr_az = az;           // azimuth from source to array along great circle
   
   // Find position vectors of each station from array centroid
   ii=0;
@@ -138,10 +145,14 @@ int main(int argc,char *argv[]){
   // Begin beamforming
   b_idx = 0;
   i_idx = 0;
+  num_samp = h.ndata;
   for (bcount=baz_min;bcount<baz_max;bcount+=baz_inc){
+    beam.baz = bcount;             // incidence angle of this current beam
     i_idx=0;
     fprintf(stdout,"%8.2f%%  complete\n",100*(float)bcount/(float)baz_max);
     for (icount=i_min;icount<i_max;icount+=i_inc){
+      beam.inc = icount;            // incidence angle of this current beam
+      beam.p = (1/v_o)*sin(deg2rad*icount)*111.195;
       ii=0;
       still_reading_data = 1;
       rewind(inf);
@@ -167,6 +178,7 @@ int main(int argc,char *argv[]){
         rad_b = (M_PI/180.)*bcount;
         t_shift = sin(rad_i)*sin(rad_b)*x_vec[ii]+sin(rad_i)*cos(rad_b)*y_vec[ii];
         i_shift = (int)(t_shift/h.delta);
+        //printf("t_shift: %8.3f i_shift: %5d\n",t_shift,i_shift);
         if (! roll(seism,seism_roll,h.ndata,i_shift)){
            fprintf(stderr,"Error timeshifting data ... \n");
            exit(1);
@@ -195,13 +207,10 @@ int main(int argc,char *argv[]){
       }
 
       for (jj=0;jj<num_samp;jj++){
-         //Linear stack in dat1
-         beam.dat1[b_idx][i_idx][jj] = linstack[jj];
-         //4th root envelope in dat2
-         beam.dat2[b_idx][i_idx][jj] = fenv[jj];
-         //4th stack in dat3
-         beam.dat3[b_idx][i_idx][jj] = stack4[jj];
+         beam.dat[jj] = fenv[jj];
       }
+
+    fwrite(&beam,sizeof(beam),1,outf);
     i_idx++;
     } //icount loop
   b_idx++;
@@ -210,8 +219,6 @@ int main(int argc,char *argv[]){
   fclose(inf);
   fflush(stdout);
   fprintf(stdout,"Writing n-th root output...\n");
-  outf = fopen(argv[8],"wb");
-  fwrite(&beam,sizeof(beam),1,outf);
   fclose(outf);
 
   return(1);

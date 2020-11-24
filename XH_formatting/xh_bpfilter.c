@@ -82,6 +82,11 @@ while (still_reading_data) {
 // if (! bpfilter(if1,if2,if3,if4,h.ndata,h.delta,f,fnew) )
 //   exit(-1);
   // Detrend the data
+  // assign frequency bands to header integer
+  h.intg[0] = if1;
+  h.intg[1] = if2;
+  h.intg[2] = if3;
+  h.intg[3] = if4;
   if (! detrend(fnew, h.ndata)) exit(-1);
   /* WRITE XH header and data */
   if (! xh_writehead(ofl,h))

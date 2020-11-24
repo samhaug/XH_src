@@ -99,6 +99,9 @@ xh_addhypothetical:
 xh_beamdescribe:
 	$(CC) -o $(BINDIR)/xh_beamdescribe xh_beamdescribe.c
 
+xh_beamdescribe_zcomp:
+	$(CC) -o $(BINDIR)/xh_beamdescribe_zcomp xh_beamdescribe_zcomp.c
+
 xh_beamenergy:
 	$(CC) -Wall -o $(BINDIR)/xh_beamenergy xh_beamenergy.c $(LIBXH) $(LIBD) $(LIBM) $(LIBSGNL)
 
@@ -108,14 +111,17 @@ xh_3compbeamform:
 xh_3compbeamform_slow:
 	$(CC) -Wall -std=gnu99  -o $(BINDIR)/xh_3compbeamform_slow xh_3compbeamform_slow.c $(LIBXH) $(LIBD) $(LIBM) $(LIBSGNL)
 
-xh_beamform:
-	$(CC) -Wall -o $(BINDIR)/xh_beamform xh_beamform.c $(LIBXH) $(LIBD) $(LIBM) $(LIBSGNL)
+xh_beamform_zcomp:
+	$(CC) -Wall -std=gnu99 -o $(BINDIR)/xh_beamform_zcomp xh_beamform_zcomp.c $(LIBXH) $(LIBD) $(LIBM) $(LIBSGNL)
 
 xh_beammax:
 	$(CC) -Wall -o $(BINDIR)/xh_beammax xh_beammax.c $(LIBXH) $(LIBD) $(LIBM) $(LIBSGNL)
 
 xh_beamnorm:
 	$(CC) -Wall -o $(BINDIR)/xh_beamnorm xh_beamnorm.c $(LIBXH) $(LIBD) $(LIBM) $(LIBSGNL)
+
+xh_beamnorm_zcomp:
+	$(CC) -Wall -std=gnu99 -o $(BINDIR)/xh_beamnorm_zcomp xh_beamnorm_zcomp.c $(LIBXH) $(LIBD) $(LIBM) $(LIBSGNL)
 
 xh_beampierce:
 	$(CC) -o $(BINDIR)/xh_beampierce xh_beampierce.c
@@ -126,6 +132,9 @@ xh_beamslice:
 xh_beamvesp:
 	$(CC) -o $(BINDIR)/xh_beamvesp xh_beamvesp.c -lm
 
+xh_beamvesp_zcomp:
+	$(CC) -Wall -std=gnu99 -o $(BINDIR)/xh_beamvesp_zcomp xh_beamvesp_zcomp.c $(LIBXH) $(LIBD) $(LIBM) $(LIBSGNL)
+
 xh_bpfilter:
 	$(CC) -o $(BINDIR)/xh_bpfilter -g xh_bpfilter.c $(LIBXH) $(LIBSGNL) $(LIBM)
 
@@ -133,7 +142,7 @@ xh_checkorder:
 	$(CC) -o $(BINDIR)/xh_checkorder xh_checkorder.c $(LIBXH) $(LIBM) 
 
 xh_cleandata:
-	$(CC) -std=c99 -o $(BINDIR)/xh_cleandata xh_cleandata.c $(LIBXH) $(LIBM) 
+	$(CC) -std=c99 -o $(BINDIR)/xh_cleandata xh_cleandata.c $(LIBXH) $(LIBM) $(LIBD)
 
 xh_compare:
 	$(CC) -o $(BINDIR)/xh_compare xh_compare.c $(LIBXH) $(LIBM) $(LIBUTL) $(XH_INC)
@@ -160,7 +169,7 @@ xh_difftstar:
 	$(CC) -o $(BINDIR)/xh_difftstar xh_difftstar.c $(LIBXH) $(LIBSGNL) $(LIBM) $(XH_INC)
 
 xh_disp2vel:
-	$(CC) -o $(BINDIR)/xh_disp2vel xh_disp2vel.c $(LIBXH) $(LIBSGNL) $(LIBM) $(XH_INC)
+	$(CC) -o $(BINDIR)/xh_disp2vel xh_disp2vel.c $(LIBXH) $(LIBSGNL) $(LIBM) 
 
 xh_dum:
 	$(CC) -o $(BINDIR)/xh_dum -g xh_dum.c $(LIBXH) $(LIBM) $(XH_INC)
@@ -212,6 +221,9 @@ xh_grepqual:
 
 xh_greprecs:
 	$(CC) -o $(BINDIR)/xh_greprecs xh_greprecs.c $(LIBXH) $(LIBM) 
+
+xh_grepnetstat:
+	$(CC) -o $(BINDIR)/xh_grepnetstat xh_grepnetstat.c $(LIBXH) $(LIBM) 
 
 xh_grepstat:
 	$(CC) -o $(BINDIR)/xh_grepstat xh_grepstat.c $(LIBXH) $(LIBM) 
@@ -434,6 +446,9 @@ xh_weightshow:
 
 xh_testZRT_sequence:
 	$(CC) -o $(BINDIR)/xh_testZRT_sequence xh_testZRT_sequence.c $(LIBM) $(LIBXH) $(XH_INC)
+
+xh_zero:
+	$(CC) -o $(BINDIR)/xh_zero xh_zero.c $(LIBXH) $(LIBM) 
 
 clean:
 	/bin/rm *.o

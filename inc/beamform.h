@@ -19,9 +19,6 @@ typedef struct {
                 float    dat1[361][41][4000]; /* baz,inc,time dependent data  */
                 float    dat2[361][41][4000]; /* baz,inc,time dependent data  */
                 float    dat3[361][41][4000]; /* baz,inc,time dependent data  */
-                //float    dat1[361][41][4000]; /* baz,inc,time dependent data  */
-                //float    dat2[182][60][10000]; /* baz,inc,time dependent data  */
-                //float    dat3[182][60][10000]; /* baz,inc,time dependent data  */
              } beamform;
 
 

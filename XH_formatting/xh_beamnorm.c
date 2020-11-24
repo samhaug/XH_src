@@ -64,6 +64,10 @@ int main(int argc,char *argv[]){
      } // for i
 
 
+    printf("baz min: %d\n",beam_in.baz_min);
+    printf("baz max: %d\n",beam_in.baz_max);
+    printf("i min: %d\n",beam_in.i_min);
+    printf("i max: %d\n",beam_in.i_max);
     baz_lim = (int)((beam_in.baz_max-beam_in.baz_min)/(float)beam_in.baz_inc);
     i_lim = (int)((beam_in.i_max-beam_in.i_min)/(float)beam_in.i_inc);
     for (i=0;i<baz_lim;i++){
